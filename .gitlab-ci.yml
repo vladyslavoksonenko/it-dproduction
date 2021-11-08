@@ -1,0 +1,47 @@
+stages:
+  - deploy
+
+develop:
+  stage: deploy
+  image: alpine
+  environment:
+    name: itd-dev
+    url: https://dev.it-dproduction.com/
+  script:
+    - 'which ssh-agent || apk add openssh-client'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - 'echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - >
+      ssh root@dev.it-dproduction.com
+      "cd /root/it-dproduction;
+      git pull;
+      cd /root/r_crm/ITD/itd-dev/ ;
+      docker-compose restart"
+  only:
+    - develop
+
+production:
+  stage: deploy
+  image: alpine
+  when: manual
+  environment:
+    name: production
+    url: https://it-dproduction.com/
+  script:
+    - 'which ssh-agent || apk add openssh-client'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - 'echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - >
+      ssh root@it-dproduction.com
+      "cd /root/it-dproduction;
+      git pull;
+      cd /root/r_crm/ITD/itd-main/ ;
+      docker-compose restart"
+  only:
+    - main
